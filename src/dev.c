@@ -1,5 +1,18 @@
-#include"../headers/all.h"
-#include"../headers/dev.h"
+/**********************************************************
+	Last Updated: Nov 1, 2014
+	CSE509 System Security 2014 Fall @CS SBU
+	Written By: 
+		Hyungjoon Koo (hykoo@cs.stonybrook.edu)
+		Yaohui Chen (yaohchen@cs.stonybrook.edu)
+
+	Description: 
+		Misc device operations
+		read, write, open, etc
+***********************************************************/
+
+#include "../headers/all.h"
+#include "../headers/dev.h"
+
 /*
  *
  *
@@ -38,14 +51,12 @@ rk_read(struct file *filp, __user char  *buf, size_t len, loff_t offset){
 
 }
 
-
 ssize_t 
 rk_write(struct file *filp, __user char  *buf, size_t len, loff_t offset){
 
 	memset(rk_buf, 0, BUFLEN);
 	count = 0;
 	while(len>0){
-	
 		rk_buf[count] = buf[count];
 		count++;
 		len--;
