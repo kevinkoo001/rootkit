@@ -1,6 +1,24 @@
-obj-m += evil.o  
-evil-objs	:=	./src/evil.o ./src/helpers.o ./src/HJ_ls.o ./src/dev.o 
+###########################################################
+#	Last Updated: Nov 1, 2014
+#	CSE509 System Security 2014 Fall @CS SBU
+#	Written By: 
+#		Hyungjoon Koo (hykoo@cs.stonybrook.edu)
+#		Yaohui Chen (yaohchen@cs.stonybrook.edu)
+#
+#	Description: Make the LKM, loadable kernel module
+############################################################
+
+obj-m += kcr.o  
+kcr-objs	:=	./src/kcr.o ./src/helpers.o ./src/HJ_ls.o ./src/dev.o 
+
+MAKE	:= make 
+KERNEL	:= /lib/modules/$(shell uname -r)/build
+PWD		:= $(shell pwd)
+
 all:
-			make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+	$(MAKE) -C $(KERNEL) M=$(PWD) modules
+	
 clean:
-			make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
+	rm -rf *.o *.ko *.symvers *.mod.* *.order *.cmd
+	rm -rf src/*.o
+	# make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
