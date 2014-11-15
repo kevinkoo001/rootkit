@@ -6,11 +6,18 @@
 #		Yaohui Chen (yaohchen@cs.stonybrook.edu)
 #
 #	Description: 
+#		Clear module automatically
 #		Should be all exported 
 #		Won't be static
 ############################################################
 
 #!/bin/sh
-sudo rmmod kcr.ko
+
+RMMOD=`which rmmod`
+REG_DEV='kcr'
+MOD_NAME='kcr.ko'
+
+sudo $RMMOD $MOD_NAME
 #sudo dmesg -c > /dev/null
 make clean
+rm -f /dev/$REG_DEV

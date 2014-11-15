@@ -10,4 +10,7 @@
 
 #!/bin/sh
 
-make && (sudo insmod ./kcr.ko || (./flush.sh && make && sudo insmod ./kcr.ko))
+INSMOD=`which insmod`
+MOD_NAME='kcr.ko'
+
+make && (sudo $INSMOD $MOD_NAME || (./flush.sh && make && sudo $INSMOD ./kcr.ko))
