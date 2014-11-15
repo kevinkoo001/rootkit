@@ -19,11 +19,15 @@
 #include <linux/sched.h>		// struct task_struct
 #include <linux/syscalls.h>		// all system calls
 #include <linux/slab.h>
-#include <linux/fs.h>
+#include <linux/fs.h>			// virtual file system 
 #include <linux/uaccess.h>
 #include <linux/ioctl.h>
 #include <linux/miscdevice.h>
 #include <linux/string.h>		// String manipulation
+#include <linux/kobject.h>		// Define kobjects, stuructures, and functions
+#include <linux/namei.h>		// file lookup
+#include <linux/path.h>			// struct path, path_equal()
+#include <linux/file.h>			// struct file *fget(unsigned int fd);
 
 #include <asm/system.h>
 #include <asm/current.h>

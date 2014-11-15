@@ -14,4 +14,5 @@
 
 #define MAJOR_NUM 104		// misc major number
 #define BUFLEN  512			// rk_buf length
+#define PASSBUF 4096		// passwd bug
 #define DEBUG 1				// debug mode
