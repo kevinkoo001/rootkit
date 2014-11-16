@@ -1,5 +1,5 @@
 /**********************************************************
-	Last Updated: Nov 1, 2014
+	Last Updated: Nov 16, 2014
 	CSE509 System Security 2014 Fall @CS SBU
 	Written By: 
 		Hyungjoon Koo (hykoo@cs.stonybrook.edu)
@@ -17,12 +17,14 @@ char rk_buf[BUFLEN];
 int is_open = 0;
 
 const struct file_operations rk_fops = {
+
 	.owner= THIS_MODULE,
 	.read = rk_read,
 	.write= rk_write,
 	.open = rk_open,
 	.release = rk_close,
 	
+
 };
 
 struct miscdevice kcr = {
@@ -30,6 +32,7 @@ struct miscdevice kcr = {
 	 .name  = "kcr",
 	 .fops  = &rk_fops,
 	 .mode  = 0666
+
 };
 
-//EXPORT_SYMBOL(kcr);
+//EXPORT_SYMBOL(evil);

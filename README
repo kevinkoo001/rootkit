@@ -1,5 +1,5 @@
 /**********************************************************
-	Last Updated: Nov 1, 2014
+	Last Updated: Nov 16, 2014
 	CSE509 System Security 2014 Fall @CS SBU
 	Written By: 
 		Hyungjoon Koo (hykoo@cs.stonybrook.edu)
@@ -32,7 +32,10 @@ A. The Rootkit Framework
 		src/HJ_x.c:  
 			Functions related to hijacking a ¡°x¡± system call 
 			All hijackings follow the same patterns
-				i.e HJ_ls.c, HJ_ps.c, HJ_lsmod.c, etc.
+				i.e HJ_ls.c, HJ_ps.c, HJ_read.c, etc.
+		
+		src/backdoor.c
+			Allows a backdoor when having a specific seteuid
 
 		headers/dev.h
 		headers/helpers.h
@@ -57,11 +60,11 @@ B. Features (http://securitee.org/teaching/cse509/files/projects/project1.html)
 			when a normal user requests to see the file (sys_read)
 		Hides processes from the process table when a user does a "ps"
 	Additional implementation
-		Key logging
+		Key logging (Not yet)
 			Either saving keystrokes to local file or sending it out to remote site
 		Backdoor
 			Allowing a normal program to have a root privilege
-		Hide the connections
+		Hide the connections (Not yet)
 			Opening/listening ports
 			i.e netstat
 		Hide the rootkit module itself 
