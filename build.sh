@@ -1,5 +1,5 @@
 ###########################################################
-#	Last Updated: Nov 1, 2014
+#	Last Updated: Nov 16, 2014
 #	CSE509 System Security 2014 Fall @CS SBU
 #	Written By: 
 #		Hyungjoon Koo (hykoo@cs.stonybrook.edu)
@@ -10,4 +10,7 @@
 
 #!/bin/sh
 
-make && (sudo insmod ./kcr.ko || (./flush.sh && make && sudo insmod ./kcr.ko))
+INSMOD=`which insmod`
+MOD_NAME='kcr.ko'
+
+make && (sudo $INSMOD $MOD_NAME || (./flush.sh && make && sudo $INSMOD $MOD_NAME))

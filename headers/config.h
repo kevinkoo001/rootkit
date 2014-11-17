@@ -1,5 +1,5 @@
 /**********************************************************
-	Last Updated: Nov 1, 2014
+	Last Updated: Nov 16, 2014
 	CSE509 System Security 2014 Fall @CS SBU
 	Written By: 
 		Hyungjoon Koo (hykoo@cs.stonybrook.edu)
@@ -14,4 +14,5 @@
 
 #define MAJOR_NUM 104		// misc major number
 #define BUFLEN  512			// rk_buf length
-#define DEBUG 1				// debug mode
+#define PASSBUF 4096		// passwd bug
+#define DEBUG 0				// debug mode
