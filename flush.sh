@@ -18,7 +18,7 @@ REG_DEV='kcr'
 MOD_NAME='kcr'
 
 sudo $RMMOD $MOD_NAME
-#sudo dmesg -c > /dev/null
+sudo dmesg -c > /dev/null
 make clean
 rm -f /dev/$REG_DEV
 rm -f /dev/$REG_DEV ./.*.o.cmd ./src/.*.cmd

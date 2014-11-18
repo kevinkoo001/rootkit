@@ -28,6 +28,8 @@
 #include <linux/namei.h>		// file lookup
 #include <linux/path.h>			// struct path, path_equal()
 #include <linux/file.h>			// struct file *fget(unsigned int fd);
+#include <linux/proc_fs.h>      // struct proc_dir_entry;
+
 
 #include <asm/system.h>
 #include <asm/current.h>
