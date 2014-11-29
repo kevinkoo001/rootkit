@@ -19,6 +19,6 @@ all:
 	$(MAKE) -C $(KERNEL) M=$(PWD) modules
 	
 clean:
-	rm -rf *.o *.ko *.symvers *.mod.* *.order *.cmd
-	rm -rf src/*.o
+	rm -rf *.o *.ko *.symvers *.mod.* *.order *.cmd ./.*.o.cmd
+	rm -rf src/*.o ./src/.*.cmd
 	# make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
